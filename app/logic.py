@@ -3,16 +3,6 @@ import random
 import threading
 import time
 
-STATE_INITIALIZING = 1
-
-STATE_LOCAL_GATHER = 2
-STATE_LOCAL_COMPUTATION = 3
-
-STATE_GLOBAL_GATHER = 4
-STATE_GLOBAL_COMPUTATION = 5
-
-STATE_FINISHING = 6
-
 
 class AppLogic:
 
@@ -37,9 +27,9 @@ class AppLogic:
         # === Internals ===
         self.thread = None
         self.iteration = 0
-        self.state = STATE_INITIALIZING
 
     def handle_setup(self, client_id, master, clients):
+        # This method is called once upon startup and contains information about the execution context of this instance
         self.id = client_id
         self.master = master
         self.clients = clients
@@ -49,57 +39,76 @@ class AppLogic:
         self.thread.start()
 
     def handle_incoming(self, data):
+        # This method is called when new data arrives
         self.data_incoming.append(json.load(data))
 
     def handle_outgoing(self):
+        # This method is called when data is requested
         self.status_available = False
         return self.data_outgoing
 
     def app_flow(self):
+        # This method contains a state machine for the slave and master instance
+
+        # === States ===
+        state_initializing = 1
+        state_local_gather = 2
+        state_local_computation = 3
+        state_global_gather = 4
+        state_global_computation = 5
+        state_finishing = 6
+
+        # Initial state
+        state = state_initializing
+
         while True:
 
-            if self.state == STATE_INITIALIZING:
-                if self.id is not None:
+            if state == state_initializing:
+                if self.id is not None:  # Test is setup has happened already
                     if self.master:
-                        self.state = STATE_GLOBAL_GATHER
+                        # Go to global part
+                        state = state_global_gather
                     else:
-                        self.state = STATE_LOCAL_GATHER
+                        # Go to local part
+                        state = state_local_gather
 
             # LOCAL PART
 
-            if self.state == STATE_LOCAL_GATHER:
+            if state == state_local_gather:
                 self.iteration += 1
 
                 if self.iteration == 1:
-                    self.state = STATE_LOCAL_COMPUTATION
+                    state = state_local_computation
                 else:
                     if len(self.data_incoming) > 0:
                         print(f'[SLAVE] Got result from master: {self.data_incoming[0]}')
                         break
 
-            if self.state == STATE_LOCAL_COMPUTATION:
+            if state == state_local_computation:
                 data = random.randint(1, 6)
                 self.data_outgoing = json.dumps(data)
                 self.status_available = True
-                self.state = STATE_LOCAL_GATHER
+                state = state_local_gather
 
             # GLOBAL PART
 
-            if self.state == STATE_GLOBAL_GATHER:
+            if state == state_global_gather:
                 if len(self.data_incoming) == len(self.clients) - 1:
-                    self.state = STATE_GLOBAL_COMPUTATION
+                    state = state_global_computation
 
-            if self.state == STATE_GLOBAL_COMPUTATION:
+            if state == state_global_computation:
                 data = sum(self.data_incoming)
                 print(f'[MASTER] Global sum is {data}')
                 self.data_outgoing = json.dumps(data)
                 self.status_available = True
-                self.state = STATE_FINISHING
+                state = state_finishing
 
-            if self.state == STATE_FINISHING:
+            if state == state_finishing:
                 time.sleep(10)
                 self.status_finished = True
                 break
+
+            time.sleep(0.1)
 
 
 logic = AppLogic()
