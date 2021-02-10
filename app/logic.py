@@ -81,7 +81,7 @@ class AppLogic:
                     state = state_local_computation
                 else:
                     if len(self.data_incoming) > 0:
-                        print(f'[SLAVE] Got result from master: {self.data_incoming[0]}')
+                        print(f'[SLAVE] Got result from master: {self.data_incoming[0]}', flush=True)
                         break
 
             if state == state_local_computation:
@@ -98,7 +98,7 @@ class AppLogic:
 
             if state == state_global_computation:
                 data = sum(self.data_incoming)
-                print(f'[MASTER] Global sum is {data}')
+                print(f'[MASTER] Global sum is {data}', flush=True)
                 self.data_outgoing = json.dumps(data)
                 self.status_available = True
                 state = state_finishing
