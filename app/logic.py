@@ -90,6 +90,7 @@ class AppLogic:
             if state == state_local_computation:
                 self.progress = 'computing...'
                 data = random.randint(1, 6)
+                print(f'[CLIENT] Sending roll ({data}) to master', flush=True)
                 self.data_outgoing = json.dumps(data)
                 self.status_available = True
                 state = state_local_gather
