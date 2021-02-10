@@ -27,6 +27,7 @@ class AppLogic:
         # === Internals ===
         self.thread = None
         self.iteration = 0
+        self.progress = 'not started yet'
 
     def handle_setup(self, client_id, master, clients):
         # This method is called once upon startup and contains information about the execution context of this instance
@@ -60,6 +61,7 @@ class AppLogic:
 
         # Initial state
         state = state_initializing
+        self.progress = 'initializing...'
 
         while True:
 
@@ -75,6 +77,7 @@ class AppLogic:
             # LOCAL PART
 
             if state == state_local_gather:
+                self.progress = 'gathering...'
                 self.iteration += 1
 
                 if self.iteration == 1:
@@ -85,6 +88,7 @@ class AppLogic:
                         break
 
             if state == state_local_computation:
+                self.progress = 'computing...'
                 data = random.randint(1, 6)
                 self.data_outgoing = json.dumps(data)
                 self.status_available = True
@@ -93,10 +97,12 @@ class AppLogic:
             # GLOBAL PART
 
             if state == state_global_gather:
+                self.progress = 'gathering...'
                 if len(self.data_incoming) == len(self.clients) - 1:
                     state = state_global_computation
 
             if state == state_global_computation:
+                self.progress = 'computing...'
                 data = sum(self.data_incoming)
                 print(f'[MASTER] Global sum is {data}', flush=True)
                 self.data_outgoing = json.dumps(data)
@@ -104,6 +110,7 @@ class AppLogic:
                 state = state_finishing
 
             if state == state_finishing:
+                self.progress = 'finishing...'
                 time.sleep(10)
                 self.status_finished = True
                 break

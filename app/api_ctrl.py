@@ -8,7 +8,7 @@ from .logic import logic
 api_server = Bottle()
 
 
-# CAREFUL: Do NOT perform any computation-related tasks inside these methods, nor inside function called here!
+# CAREFUL: Do NOT perform any computation-related tasks inside these methods, nor inside functions called from them!
 # Otherwise your app does not respond to calls made by the FeatureCloud system quickly enough
 # Use the threaded loop in the app_flow function inside the file logic.py instead
 
