@@ -168,7 +168,7 @@ class AppLogic:
                     # Set available to True such that the data will be broadcasted
                     self.status_available = True
                     state = state_finish
-                    print("COORDINATOR] Global aggregation finished.", flush=True)
+                    print("[COORDINATOR] Global aggregation finished.", flush=True)
                 else:
                     print(
                         f"[COORDINATOR] Data of {str(len(self.clients) - len(self.data_incoming))} client(s) still "
