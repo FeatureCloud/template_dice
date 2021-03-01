@@ -10,7 +10,7 @@ web_server = Bottle()
 # Use the threaded loop in the app_flow function inside the file logic.py instead
 
 
-@web_server.route('/')
+@web_server.route("/")
 def index():
-    print(f'[WEB] GET /', flush=True)
-    return f'Progress: {logic.progress}'
+    print(f"[WEB] GET /", flush=True)
+    return f"Progress: {logic.progress}"

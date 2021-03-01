@@ -1,1 +1,5 @@
-bottle
+bottle # webserver
+jsonpickle # to send complex datatypes
+numpy
+pandas
+pyyaml

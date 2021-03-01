@@ -13,32 +13,32 @@ api_server = Bottle()
 # Use the threaded loop in the app_flow function inside the file logic.py instead
 
 
-@api_server.post('/setup')
+@api_server.post("/setup")
 def ctrl_setup():
     time.sleep(1)
-    print(f'[CTRL] POST /setup', flush=True)
+    print(f"[API] POST /setup", flush=True)
     payload = request.json
-    logic.handle_setup(payload['id'], payload['master'], payload['clients'])
-    return ''
+    logic.handle_setup(payload["id"], payload["master"], payload["clients"])
+    return ""
 
 
-@api_server.get('/status')
+@api_server.get("/status")
 def ctrl_status():
-    print(f'[CTRL] GET /status', flush=True)
+    print(f"[API] GET /status (available={logic.status_available} finished={logic.status_finished})", flush=True)
     return json.dumps({
-        'available': logic.status_available,
-        'finished': logic.status_finished,
+        "available": logic.status_available,
+        "finished": logic.status_finished,
     })
 
 
-@api_server.route('/data', method='GET')
+@api_server.route("/data", method="GET")
 def ctrl_data_out():
-    print(f'[CTRL] GET /data', flush=True)
+    print(f"[API] GET /data", flush=True)
     return logic.handle_outgoing()
 
 
-@api_server.route('/data', method='POST')
+@api_server.route("/data", method="POST")
 def ctrl_data_in():
-    print(f'[CTRL] POST /data', flush=True)
+    print(f"[API] POST /data", flush=True)
     logic.handle_incoming(request.body)
-    return ''
+    return ""
