@@ -1,5 +1,4 @@
 bottle # webserver
 jsonpickle # to send complex datatypes
-numpy
-pandas
-pyyaml
+numpy # for mathematical computations
+pyyaml # to read config file

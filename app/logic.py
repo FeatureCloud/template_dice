@@ -3,7 +3,6 @@ import threading
 import time
 
 import jsonpickle
-import pandas as pd
 import yaml
 
 from app.algo import local_computation, global_aggregation
@@ -104,7 +103,9 @@ class AppLogic:
             if state == state_read_input:
                 self.progress = "read input..."
                 print("[CLIENT] Read input...", flush=True)
+                # Read the config file
                 self.read_config()
+                # Here you could read in your input files
                 state = state_local_computation
                 print("[CLIENT] Read input finished.", flush=True)
 
@@ -112,15 +113,22 @@ class AppLogic:
                 self.progress = "compute local results..."
                 print("[CLIENT] Compute local results...", flush=True)
                 self.progress = 'computing...'
+
+                # Compute local results
                 local_results = local_computation()
+                # Encode local results to send it to coordinator
                 data_to_send = jsonpickle.encode(local_results)
 
                 if self.coordinator:
+                    # if the client is the coordinator: add the local results directly to the data_incoming array
                     self.data_incoming.append(data_to_send)
+                    # go to state where the coordinator is waiting for the local results and aggregates them
                     state = state_global_aggregation
                 else:
+                    # if the client is not the cooridnator: set data_outgoing and set status_available to true
                     self.data_outgoing = data_to_send
                     self.status_available = True
+                    # go to state where the client is waiting for the aggregated results
                     state = state_wait_for_aggregation
                     print('[CLIENT] Send data to coordinator', flush=True)
                 print("[CLIENT] Compute local results finished.", flush=True)
@@ -128,11 +136,14 @@ class AppLogic:
             if state == state_wait_for_aggregation:
                 self.progress = "wait for aggregated results..."
                 print("[CLIENT] Wait for aggregated results from coordinator...", flush=True)
-                self.progress = 'wait for aggregation'
+                # Wait until received broadcast data from coordinator
                 if len(self.data_incoming) > 0:
                     print("[CLIENT] Process aggregated result from coordinator...", flush=True)
+                    # Decode broadcasted data
                     self.global_result = jsonpickle.decode(self.data_incoming[0])
+                    # Empty incoming data
                     self.data_incoming = []
+                    # Go to nex state (finish)
                     state = state_finish
                     print("[CLIENT] Processing aggregated results finished.", flush=True)
 
@@ -144,11 +155,17 @@ class AppLogic:
                 if len(self.data_incoming) == len(self.clients):
                     print("[COORDINATOR] Received data of all participants.", flush=True)
                     print("[COORDINATOR] Aggregate results...", flush=True)
+                    # Decode received data of each client
                     data = [jsonpickle.decode(client_data) for client_data in self.data_incoming]
+                    # Empty the incoming data (important for multiple iterations)
                     self.data_incoming = []
+                    # Perform global aggregation
                     self.global_result = global_aggregation(data)
+                    # Encode aggregated results for broadcasting
                     data_to_broadcast = jsonpickle.encode(self.global_result)
+                    # Fill data_outgoing
                     self.data_outgoing = data_to_broadcast
+                    # Set available to True such that the data will be broadcasted
                     self.status_available = True
                     state = state_finish
                     print("COORDINATOR] Global aggregation finished.", flush=True)
@@ -160,13 +177,18 @@ class AppLogic:
             if state == state_finish:
                 self.progress = "finishing..."
                 print("[CLIENT] FINISHING", flush=True)
-                self.progress = 'finishing...'
+
+                # Write results
                 print(f"Final result: {self.global_result}")
                 f = open(f"{self.OUTPUT_DIR}/result.txt", "w")
                 f.write(str(self.global_result))
                 f.close()
+
+                # Wait some seconds to make sure all clients have written the results. This will be fixed soon.
                 if self.coordinator:
                     time.sleep(5)
+
+                # Set finished flag to True, which ends the computation
                 self.status_finished = True
                 self.progress = "finished."
                 break
