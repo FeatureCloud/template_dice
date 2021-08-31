@@ -19,60 +19,59 @@ class AppLogic:
         # Will stop execution when True
         self.status_finished = False
 
-        # === Data ===
-        self.data_incoming = []
-        self.data_outgoing = None
-
         # === Parameters set during setup ===
         self.id = None
         self.coordinator = None
         self.clients = None
+
+        # === Data ===
+        self.data_incoming = []
+        self.data_outgoing = None
+
+        # === Internals ===
+        self.thread = None
+        self.iteration = 0
+        self.progress = "not started yet"
 
         # === Directories, input files always in INPUT_DIR. Write your output always in OUTPUT_DIR
         self.INPUT_DIR = "/mnt/input"
         self.OUTPUT_DIR = "/mnt/output"
 
         # === Variables from config.yml
-        self.input_filename = None
-        self.sep = None
-        self.output_filename = None
+        self.output_name = None
 
-        # === Internals ===
-        self.thread = None
-        self.iteration = 0
-        self.progress = "not started yet"
         self.local_result = None
         self.global_result = None
 
-    def handle_setup(self, client_id, master, clients):
+    def handle_setup(self, client_id, coordinator, clients):
         # This method is called once upon startup and contains information about the execution context of this instance
         self.id = client_id
-        self.coordinator = master
+        self.coordinator = coordinator
         self.clients = clients
-        print(f"Received setup: {self.id} {self.coordinator} {self.clients}", flush=True)
+        print(f'Received setup: {self.id} {self.coordinator} {self.clients}', flush=True)
 
         self.thread = threading.Thread(target=self.app_flow)
         self.thread.start()
 
     def handle_incoming(self, data):
         # This method is called when new data arrives
-        print("Process incoming data....", flush=True)
+        print('Process incoming data....', flush=True)
         self.data_incoming.append(data.read())
 
     def handle_outgoing(self):
-        print("Process outgoing data...", flush=True)
+        print('Process outgoing data...', flush=True)
         # This method is called when data is requested
         self.status_available = False
         return self.data_outgoing
 
     def read_config(self):
-        with open(self.INPUT_DIR + "/config.yml") as f:
-            config = yaml.load(f, Loader=yaml.FullLoader)["fc_template"]
-            self.input_filename = config["files"]["input_filename"]
-            self.sep = config["files"]["sep"]
-            self.output_filename = config["files"]["output_filename"]
-        shutil.copyfile(self.INPUT_DIR + "/config.yml", self.OUTPUT_DIR + "/config.yml")
-        print(f"Read config file.", flush=True)
+        try:
+            with open(self.INPUT_DIR + "/config.yml") as f:
+                config = yaml.load(f, Loader=yaml.FullLoader)["fc_dice"]
+                self.output_name = config["output_name"]
+            shutil.copyfile(self.INPUT_DIR + "/config.yml", self.OUTPUT_DIR + "/config.yml")
+        except:
+            self.output_name = 'output.csv'
 
     def app_flow(self):
         # This method contains a state machine for the participant and coordinator instance
@@ -97,7 +96,7 @@ class AppLogic:
                         print("I am the coordinator.", flush=True)
                     else:
                         print("I am a participating client.", flush=True)
-                    state = state_local_computation
+                    state = state_read_input
                 print("[CLIENT] Initializing finished.", flush=True)
 
             if state == state_read_input:
@@ -180,7 +179,7 @@ class AppLogic:
 
                 # Write results
                 print(f"Final result: {self.global_result}")
-                f = open(f"{self.OUTPUT_DIR}/result.txt", "w")
+                f = open(f'{self.OUTPUT_DIR}/{self.output_name}', "w")
                 f.write(str(self.global_result))
                 f.close()
 
